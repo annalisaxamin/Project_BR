@@ -1,0 +1,78 @@
+---
+title: "Project Bioinformatic Resources"
+author: "Annalisa Xamin"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      tidy.opts=list(width.cutoff = 80),
+                      tidy = TRUE,
+                      fig.width = unit(3, "cm"),
+                      fig.height = unit(2, "cm"),
+                      fig.align = "center"
+                      )
+
+# Set working directory
+setwd("~/Documents/Repo_Git/Project_BR")
+```
+
+# Introduction
+The following analysis focus on RNA-seq count data extracted from different cancer datasets from the Cancer Genome Atlas (TCGA). From the original TCGA data 50 cases (tumor samples) and 50 controls (normal samples) were randomly selected.
+
+# Analysis
+The packages needed for the analysis are the following:
+```{r load libraries}
+library(tidyverse)
+library(biomaRt)
+library(MotifDb) # large collection of motifs across different species
+library(seqLogo) 
+library(PWMEnrich)
+library(PWMEnrich.Hsapiens.background)
+library(GEOquery)
+library(oligo)
+library("pd.hg.u133.plus.2")
+library(hgu133plus2.db)
+library(genefilter)
+library(limma)
+library(pheatmap)
+library("stringr")
+library("GenomicFeatures") # to build object with specific information such as genomic coordinates
+library("ggplot2")
+library("edgeR") # designed to perform Differential Expression Analysis from RNA-Seq data
+library(fgsea) # computation of enrichment scores and other statistics
+library(org.Hs.eg.db) # database annotation human specific transcript from Ensembl
+library(clusterProfiler) # uses Fisher test, explore gene list of interest against a reference
+library(enrichplot) # build enrich map
+library(ggnewscale)
+library(DOSE)
+library(pathview) # contains cartoons of pathways and we project on them our genes of interest
+
+```
+
+
+## Load data
+In particular, we consider data coming from **Lung adenocarcinoma**.
+```{r Load data}
+load("./RData/Lung_adenocarcinoma.RData")
+```
+After loading the data, the following three data-frames are available:
+
+- `raw_counts_df` which contains the raw RNA-seq counts;
+
+- `c_anno_df`, which contains sample name and condition (case and control);
+
+- `r_anno_df`, which contains the ENSEMBL genes ids, the length of the genes and the genes symbols.
+
+## Filter protein coding genes
+To extract only protein coding genes from `raw_counts_df` and `r_anno_df`, we use the `biomaRt` package.
+
+```{r extract protein coding genes}
+
+```
+
