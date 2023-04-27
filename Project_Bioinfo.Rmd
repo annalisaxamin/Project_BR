@@ -27,7 +27,8 @@ The following analysis focus on RNA-seq count data extracted from different canc
 
 # Analysis
 The packages needed for the analysis are the following:
-```{r load libraries}
+```{r load libraries, results='hide'}
+library("sessioninfo")
 library(tidyverse)
 library(biomaRt)
 library(MotifDb) # large collection of motifs across different species
@@ -52,9 +53,16 @@ library(enrichplot) # build enrich map
 library(ggnewscale)
 library(DOSE)
 library(pathview) # contains cartoons of pathways and we project on them our genes of interest
-
 ```
 
+For reproducibility, we include the R session information.
+```{r session info, warning=FALSE, results='hide', message=FALSE}
+print('Reproducibility information:') 
+Sys.time()
+proc.time()
+options(width = 120)
+session_info()
+```
 
 ## Load data
 In particular, we consider data coming from **Lung adenocarcinoma**.
@@ -73,6 +81,6 @@ After loading the data, the following three data-frames are available:
 To extract only protein coding genes from `raw_counts_df` and `r_anno_df`, we use the `biomaRt` package.
 
 ```{r extract protein coding genes}
-
+#
 ```
 
