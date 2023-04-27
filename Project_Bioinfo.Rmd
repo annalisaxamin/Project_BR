@@ -13,8 +13,6 @@ knitr::opts_chunk$set(warning=FALSE,
                       message=FALSE,
                       tidy.opts=list(width.cutoff = 80),
                       tidy = TRUE,
-                      fig.width = unit(3, "cm"),
-                      fig.height = unit(2, "cm"),
                       fig.align = "center"
                       )
 
@@ -28,7 +26,7 @@ The following analysis focus on RNA-seq count data extracted from different canc
 # Analysis
 The packages needed for the analysis are the following:
 ```{r load libraries, results='hide'}
-library("sessioninfo")
+library(sessioninfo)
 library(tidyverse)
 library(biomaRt)
 library(MotifDb) # large collection of motifs across different species
@@ -37,15 +35,15 @@ library(PWMEnrich)
 library(PWMEnrich.Hsapiens.background)
 library(GEOquery)
 library(oligo)
-library("pd.hg.u133.plus.2")
+library(pd.hg.u133.plus.2)
 library(hgu133plus2.db)
 library(genefilter)
 library(limma)
 library(pheatmap)
-library("stringr")
-library("GenomicFeatures") # to build object with specific information such as genomic coordinates
-library("ggplot2")
-library("edgeR") # designed to perform Differential Expression Analysis from RNA-Seq data
+library(stringr)
+library(GenomicFeatures) # to build object with specific information such as genomic coordinates
+library(ggplot2)
+library(edgeR) # designed to perform Differential Expression Analysis from RNA-Seq data
 library(fgsea) # computation of enrichment scores and other statistics
 library(org.Hs.eg.db) # database annotation human specific transcript from Ensembl
 library(clusterProfiler) # uses Fisher test, explore gene list of interest against a reference
@@ -77,10 +75,47 @@ After loading the data, the following three data-frames are available:
 
 - `r_anno_df`, which contains the ENSEMBL genes ids, the length of the genes and the genes symbols.
 
+```{r explore raw_counts_df, include=FALSE}
+# Explore only the first 5 rows of the dataframe
+head(raw_counts_df, n=5)
+head(rownames(raw_counts_df), n=5)
+head(colnames(raw_counts_df), n=5)
+```
+
+```{r explore c_anno_df, include = FALSE}
+# Explore only the first 5 rows of the dataframe
+head(c_anno_df, n = 5)
+head(rownames(c_anno_df), n=5)
+head(colnames(c_anno_df)) # there are only 2 columns: sample and condition
+```
+
+```{r explore r_anno_df, include = FALSE}
+# Explore only the first 5 rows of the dataframe
+head(r_anno_df, n = 5)
+head(rownames(r_anno_df), n=5)
+head(colnames(r_anno_df)) # there are only 3 columns: ensembl_gene_id, external_gene_name, length
+```
+
 ## Filter protein coding genes
 To extract only protein coding genes from `raw_counts_df` and `r_anno_df`, we use the `biomaRt` package.
 
+```{r attributes, include = FALSE}
+# get the list of possible attributes
+ensembl <- useMart("ensembl")
+ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
+attributes <- listAttributes(ensembl)
+```
+
+
 ```{r extract protein coding genes}
-#
+query <- getBM(attributes=c("ensembl_gene_id",
+                            "external_gene_name",
+                            "gene_biotype"),
+                filters = c("ensembl_gene_id"), 
+                values = r_anno_df$ensembl_gene_id,
+                mart = ensembl)
+
+query_protein_coding <- query[which(query$gene_biotype == "protein_coding"), ]
+
 ```
 
