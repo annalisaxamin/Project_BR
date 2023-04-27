@@ -1,11 +1,11 @@
 ---
 title: "Project Bioinformatic Resources"
-author: "Annalisa Xamin"
+author: "Annalisa Xamin, Nicola Perotti"
 output:
-  pdf_document:
-    latex_engine: xelatex
   html_document:
     df_print: paged
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 ```{r setup, include=FALSE}
