@@ -20,6 +20,7 @@ knitr::opts_chunk$set(warning=FALSE,
 setwd("~/Documents/Repo_Git/Project_BR")
 ```
 
+
 # Introduction
 The following analysis focus on RNA-seq count data extracted from different cancer datasets from the Cancer Genome Atlas (TCGA). From the original TCGA data 50 cases (tumor samples) and 50 controls (normal samples) were randomly selected.
 
