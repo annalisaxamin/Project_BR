@@ -120,3 +120,41 @@ query_protein_coding <- query[which(query$gene_biotype == "protein_coding"), ]
 
 ```
 
+```{r inspect query_protein_coding, include=FALSE}
+query_protein_coding
+```
+
+```{r raw_counts r_anno df protein coding}
+indexes_r_anno_df <- which(r_anno_df$ensembl_gene_id %in% query_protein_coding$ensembl_gene_id)
+r_anno_df_protein_coding <- r_anno_df[indexes_r_anno_df, ]
+
+indexes_raw_counts_df <- which(rownames(raw_counts_df) %in% query_protein_coding$ensembl_gene_id)
+raw_counts_df_protein_coding <- raw_counts_df[indexes_raw_counts_df, ]
+```
+
+## Differential expression analysis
+To perform the differential expression analysis, we will use the `edgeR` package. 
+
+```{r DE}
+
+```
+
+```{r filter raw counts > 20}
+
+```
+
+```{r volcano plot}
+
+```
+
+```{r heatmap}
+
+```
+
+## Gene set enrichment analysis
+To perform the gene set enrichment analysis, we will use the `clusterProfiler` package.
+
+
+## Visualization of the enriched pathway
+
+
