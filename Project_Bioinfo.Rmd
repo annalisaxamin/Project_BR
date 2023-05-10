@@ -2,10 +2,10 @@
 title: "Project Bioinformatic Resources"
 author: "Annalisa Xamin, Nicola Perotti"
 output:
-  html_document:
-    df_print: paged
   pdf_document:
     latex_engine: xelatex
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -52,15 +52,6 @@ library(enrichplot) # build enrich map
 library(ggnewscale)
 library(DOSE)
 library(pathview) # contains cartoons of pathways and we project on them our genes of interest
-```
-
-For reproducibility, we include the R session information.
-```{r session info, warning=FALSE, results='hide', message=FALSE}
-print('Reproducibility information:') 
-Sys.time()
-proc.time()
-options(width = 120)
-session_info()
 ```
 
 ## Load data
@@ -135,13 +126,29 @@ raw_counts_df_protein_coding <- raw_counts_df[indexes_raw_counts_df, ]
 ## Differential expression analysis
 To perform the differential expression analysis, we will use the `edgeR` package. 
 
-```{r DE}
+It is important to remove genes with low signal that will have low statistical power. Since, we want to focus on the transcripts we can use to perform the analysis, we can filter raw counts data using a threshold of raw count > 20 in at least 5 replicates.
+```{r filtering}
+# count threshold
+count_thr <- 20
 
+# number of replicates with more counts than the count threshold
+repl_thr <- 5
+
+filter_vec <- apply(raw_counts_df_protein_coding,1, # go through all count matrices by rows
+    function(y) max(by(y, c_anno_df$condition, function(x) sum(x>=count_thr))))
+    # groups the values on each condition and sum all the values above the count
 ```
 
-```{r filter raw counts > 20}
-
+```{r see statistics for the filtering, include=FALSE}
+table(filter_vec)
 ```
+
+```{r create filtered df }
+filter_counts_df <- raw_counts_df_protein_coding[filter_vec>=repl_thr,]
+
+filter_anno_df <- r_anno_df_protein_coding[rownames(filter_counts_df)]
+```
+
 
 ```{r volcano plot}
 
