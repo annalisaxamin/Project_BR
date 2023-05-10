@@ -68,21 +68,21 @@ After loading the data, the following three data-frames are available:
 - `r_anno_df`, which contains the ENSEMBL genes ids, the length of the genes and the genes symbols.
 
 ```{r explore raw_counts_df, include=FALSE}
-# Explore only the first 5 rows of the dataframe
+# Explore only the first 5 rows of the data frame
 head(raw_counts_df, n=5)
 head(rownames(raw_counts_df), n=5)
 head(colnames(raw_counts_df), n=5)
 ```
 
 ```{r explore c_anno_df, include = FALSE}
-# Explore only the first 5 rows of the dataframe
+# Explore only the first 5 rows of the data frame
 head(c_anno_df, n = 5)
 head(rownames(c_anno_df), n=5)
 head(colnames(c_anno_df)) # there are only 2 columns: sample and condition
 ```
 
 ```{r explore r_anno_df, include = FALSE}
-# Explore only the first 5 rows of the dataframe
+# Explore only the first 5 rows of the data frame
 head(r_anno_df, n = 5)
 head(rownames(r_anno_df), n=5)
 head(colnames(r_anno_df)) # there are only 3 columns: ensembl_gene_id, external_gene_name, length
@@ -97,8 +97,7 @@ ensembl <- useMart("ensembl")
 ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
 attributes <- listAttributes(ensembl)
 ```
-
-
+First, we retrieve the information about the protein coding genes from Ensembl.
 ```{r extract protein coding genes}
 query <- getBM(attributes=c("ensembl_gene_id",
                             "external_gene_name",
@@ -115,6 +114,7 @@ query_protein_coding <- query[which(query$gene_biotype == "protein_coding"), ]
 query_protein_coding
 ```
 
+Then, we filter the data frames containing the raw counts and the annotation to keep only the protein coding genes.
 ```{r raw_counts r_anno df protein coding}
 indexes_r_anno_df <- which(r_anno_df$ensembl_gene_id %in% query_protein_coding$ensembl_gene_id)
 r_anno_df_protein_coding <- r_anno_df[indexes_r_anno_df, ]
@@ -142,7 +142,7 @@ filter_vec <- apply(raw_counts_df_protein_coding,1, # go through all count matri
 ```{r see statistics for the filtering, include=FALSE}
 table(filter_vec)
 ```
-
+Then, we filter the previously updated data frames.
 ```{r create filtered df }
 filter_counts_df <- raw_counts_df_protein_coding[filter_vec>=repl_thr,]
 
