@@ -17,7 +17,7 @@ knitr::opts_chunk$set(warning=FALSE,
                       )
 
 # Set working directory
-setwd("~/Documents/Repo_Git/Project_BR")
+#setwd("~/Documents/Repo_Git/Project_BR")
 ```
 
 
@@ -88,6 +88,14 @@ head(rownames(r_anno_df), n=5)
 head(colnames(r_anno_df)) # there are only 3 columns: ensembl_gene_id, external_gene_name, length
 ```
 
+```{r}
+# rownames(c_anno_df) <- c_anno_df$sample
+# c_anno_add <- as.data.frame(str_split(string=c_anno_df$sample, pattern="_", simplify = T))
+# colnames(c_anno_add) <- c("condition","replicate")
+# c_anno_df <- cbind(c_anno_df,c_anno_add)
+# c_anno_df
+```
+
 ## Filter protein coding genes
 To extract only protein coding genes from `raw_counts_df` and `r_anno_df`, we use the `biomaRt` package.
 
@@ -146,17 +154,86 @@ Then, we filter the previously updated data frames.
 ```{r create filtered df }
 filter_counts_df <- raw_counts_df_protein_coding[filter_vec>=repl_thr,]
 
-filter_anno_df <- r_anno_df_protein_coding[rownames(filter_counts_df)]
+filter_anno_df <- r_anno_df_protein_coding[rownames(filter_counts_df),]
 ```
 
+```{r}
+edge_c <- DGEList(counts=filter_counts_df,group=c_anno_df$condition,samples=c_anno_df,genes=filter_anno_df)
+
+# computing norm factors for TMM normalization
+edge_n <- calcNormFactors(edge_c,method="TMM")
+```
+
+```{r}
+# create a cpm table (normalized expression values)
+cpm_table <- as.data.frame(round(cpm(edge_n),2))
+```
+
+```{r, include=FALSE}
+long_cpm_df <- gather(cpm_table, key = "sample", value = "CPM")
+
+ggplot(data=long_cpm_df,aes(sample,CPM+1)) +
+   geom_boxplot(colour="olivedrab",fill="olivedrab",alpha=0.7)+
+   theme_bw()+
+   scale_y_log10() 
+```
+
+```{r}
+design <- model.matrix(~0+group, data=edge_n$samples)
+colnames(design) <- levels(edge_n$samples$group)
+rownames(design) <- edge_n$samples$sample
+#design
+```
+
+```{r}
+# calculate dispersion and fit with edgeR (necessary for differential expression analysis)
+edge_d <- estimateDisp(edge_n,design)
+edge_f <- glmQLFit(edge_d,design) 
+```
+
+```{r}
+contro <- makeContrasts("control-case", levels=design)
+```
+`estimateDisp` $$\rightarrow$$ The tool tries to estimate the variability at different levels: in the data, inter sample and intra sample.
+
+```{r}
+# fit the model with generalized linear models
+edge_t <- glmQLFTest(edge_f,contrast=contro)
+DEGs <- as.data.frame(topTags(edge_t, n=20,p.value = 0.01,sort.by = "logFC")) # returns object with best 20 top genes
+DEGs <- as.data.frame(topTags(edge_t,n=20000)) # select all the 20000 genes
+
+# We can improve the selection, considering not only the p-value, but also
+# the average expression of the genes (logCPM).
+DEGs$class <- "="
+DEGs$class[which(DEGs$logCPM>1&DEGs$logFC>1.5&DEGs$FDR<0.25)] = "+" # upregulated genes
+DEGs$class[which(DEGs$logCPM>1&DEGs$logFC<(-1.5)&DEGs$FDR<0.25)] = "-" # downregulated genes
+DEGs <- DEGs[order(DEGs$logFC,decreasing = T),]
+```
+
+```{r}
+head(DEGs)
+table(DEGs$class) # 1202-, 885+, 15202= 
+```
 
 ```{r volcano plot}
+input_df <- DEGs
+xlabel <- "log2 FC case vs control"
+ylabel <- "-log10 p-value"
 
+par(fig=c(0,1,0,1), mar=c(4,4,1,2), mgp=c(2, 0.75, 0))	
+plot(input_df$logFC, -log(input_df$PValue,base=10),xlab=xlabel, ylab=ylabel, 
+     col=ifelse(input_df$class=="=","grey70","olivedrab4"), pch=20, frame.plot=TRUE, cex=0.8, main="Volcano plot")
+abline(v=0,lty=2,col="grey20")
 ```
 
 ```{r heatmap}
-
+cols <- c(ifelse(c_anno_df$condition == "case", "chartreuse4","burlywood3"))
+pal <- c("blue","white","red") 
+pal <- colorRampPalette(pal)(100)
+heatmap(as.matrix(cpm_table[which(rownames(cpm_table)%in%DEGs$ensembl_gene_id[which(DEGs$class!="=")]),]),
+        ColSideColors = cols,cexCol = 0.5,margins = c(4,4),col=pal,cexRow = 0.2)
 ```
+
 
 ## Gene set enrichment analysis
 To perform the gene set enrichment analysis, we will use the `clusterProfiler` package.
