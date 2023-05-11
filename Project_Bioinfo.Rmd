@@ -17,7 +17,7 @@ knitr::opts_chunk$set(warning=FALSE,
                       )
 
 # Set working directory
-#setwd("~/Documents/Repo_Git/Project_BR")
+setwd("~/Documents/Repo_Git/Project_BR")
 ```
 
 
@@ -107,6 +107,7 @@ attributes <- listAttributes(ensembl)
 ```
 First, we retrieve the information about the protein coding genes from Ensembl.
 ```{r extract protein coding genes}
+ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
 query <- getBM(attributes=c("ensembl_gene_id",
                             "external_gene_name",
                             "gene_biotype"),
@@ -157,14 +158,14 @@ filter_counts_df <- raw_counts_df_protein_coding[filter_vec>=repl_thr,]
 filter_anno_df <- r_anno_df_protein_coding[rownames(filter_counts_df),]
 ```
 
-```{r}
+```{r TMM normalization}
 edge_c <- DGEList(counts=filter_counts_df,group=c_anno_df$condition,samples=c_anno_df,genes=filter_anno_df)
 
 # computing norm factors for TMM normalization
 edge_n <- calcNormFactors(edge_c,method="TMM")
 ```
 
-```{r}
+```{r cpm_table}
 # create a cpm table (normalized expression values)
 cpm_table <- as.data.frame(round(cpm(edge_n),2))
 ```
@@ -182,21 +183,25 @@ ggplot(data=long_cpm_df,aes(sample,CPM+1)) +
 design <- model.matrix(~0+group, data=edge_n$samples)
 colnames(design) <- levels(edge_n$samples$group)
 rownames(design) <- edge_n$samples$sample
-#design
 ```
 
-```{r}
+```{r insepct design, include=FALSE}
+design
+```
+
+
+```{r dispersion and fit}
 # calculate dispersion and fit with edgeR (necessary for differential expression analysis)
 edge_d <- estimateDisp(edge_n,design)
 edge_f <- glmQLFit(edge_d,design) 
 ```
 
-```{r}
+```{r define contrasts}
 contro <- makeContrasts("control-case", levels=design)
 ```
 `estimateDisp` $$\rightarrow$$ The tool tries to estimate the variability at different levels: in the data, inter sample and intra sample.
 
-```{r}
+```{r DE}
 # fit the model with generalized linear models
 edge_t <- glmQLFTest(edge_f,contrast=contro)
 DEGs <- as.data.frame(topTags(edge_t, n=20,p.value = 0.01,sort.by = "logFC")) # returns object with best 20 top genes
@@ -210,7 +215,7 @@ DEGs$class[which(DEGs$logCPM>1&DEGs$logFC<(-1.5)&DEGs$FDR<0.25)] = "-" # downreg
 DEGs <- DEGs[order(DEGs$logFC,decreasing = T),]
 ```
 
-```{r}
+```{r check how many up and down regulated}
 head(DEGs)
 table(DEGs$class) # 1202-, 885+, 15202= 
 ```
@@ -235,7 +240,7 @@ heatmap(as.matrix(cpm_table[which(rownames(cpm_table)%in%DEGs$ensembl_gene_id[wh
         ColSideColors = cols,cexCol = 0.5,margins = c(4,4),col=pal,cexRow = 0.2)
 ```
 
-```{r}
+```{r save up and down regulated in text file}
 up_DEGs <- DEGs[which(DEGs$class=="+"),]
 down_DEGs <- DEGs[which(DEGs$class=="-"),]
 
@@ -248,7 +253,7 @@ write.table(DEGs,file="DEGs.txt",row.names=F,col.names=T,sep="\t",quote=F)
 ## Gene set enrichment analysis
 To perform the gene set enrichment analysis, we will use the `clusterProfiler` package.
 
-```{r}
+```{r import the previously saved DEGs}
 DEGs <- read.table("DEGs.txt",header=T,sep="\t",as.is=T)
 table(DEGs$class)
 ```
@@ -267,23 +272,23 @@ DEGs <- DEGs[-which(duplicated(DEGs$entrezgene_id)),]
 ```
 
 
-```{r}
+```{r rank, include= FALSE}
 ranks <- DEGs$logFC
 ranks <- sort(ranks, decreasing = T) # sort manually to have the order needed for the package
 names(ranks) <- DEGs$entrezgene_id
 head(ranks)
 barplot(sort(ranks, decreasing = T),las=3)
 ```
-Forse la parte precedente non serve
 
 
 ```{r}
-# list of upregulated genes
+# list of up-regulated genes
 upDEGs <- DEGs %>% filter(class == "+")
+# list of down-regulated genes
 downDEGs <- DEGs %>% filter(class == "-")
 ```
 
-```{r}
+```{r BP up regulated}
 # biological process up
 ego_BP <- enrichGO(gene = upDEGs$external_gene_name.y,
                    OrgDb = org.Hs.eg.db,
@@ -294,7 +299,7 @@ ego_BP <- enrichGO(gene = upDEGs$external_gene_name.y,
                    qvalueCutoff = 0.05)
 ```
 
-```{r}
+```{r BP down regulated}
 # biological process down
 ego_BP_d <- enrichGO(gene = downDEGs$external_gene_name.y,
                    OrgDb = org.Hs.eg.db,
@@ -306,16 +311,16 @@ ego_BP_d <- enrichGO(gene = downDEGs$external_gene_name.y,
 ```
 
 
-```{r}
+```{r barplot BP up}
 barplot(ego_BP,showCategory=10)
 ```
 
-```{r}
+```{r barplot BP down}
 barplot(ego_BP_d,showCategory=10)
 ```
 
 
-```{r}
+```{r MP up regulated}
 # molecular function up
 ego_MF <- enrichGO(gene = upDEGs$external_gene_name.y,
                    OrgDb = org.Hs.eg.db,
@@ -326,7 +331,7 @@ ego_MF <- enrichGO(gene = upDEGs$external_gene_name.y,
                    qvalueCutoff = 0.05)
 ```
 
-```{r}
+```{r MP down regulated}
 # molecular function down
 ego_MF_d <- enrichGO(gene = downDEGs$external_gene_name.y,
                    OrgDb = org.Hs.eg.db,
@@ -337,15 +342,15 @@ ego_MF_d <- enrichGO(gene = downDEGs$external_gene_name.y,
                    qvalueCutoff = 0.05)
 ```
 
-```{r}
+```{r visualize MF up}
 barplot(ego_MF,showCategory=10)
 ```
 
-```{r}
+```{r visualize MF down}
 barplot(ego_MF_d,showCategory=10)
 ```
 
-```{r}
+```{r WP up regulated}
 eWP <- enrichWP(gene = upDEGs$entrezgene_id,
                     organism = 'Homo sapiens',
                     pvalueCutoff = 0.05,
@@ -354,7 +359,7 @@ eWP <- enrichWP(gene = upDEGs$entrezgene_id,
 head(eWP, n=10)
 ```
 
-```{r}
+```{r WP down regulated}
 eWP_d <- enrichWP(gene = downDEGs$entrezgene_id,
                     organism = 'Homo sapiens',
                     pvalueCutoff = 0.05,
@@ -363,7 +368,7 @@ eWP_d <- enrichWP(gene = downDEGs$entrezgene_id,
 head(eWP_d, n=10)
 ```
 Chiedere a Romanel per pathway.id (KEGG o WP)?
-```{r}
+```{r pathview up regulated}
 logFC <- upDEGs$logFC
 names(logFC) <- upDEGs$entrezgene_id
 pathview(gene.data = logFC, 
@@ -372,7 +377,7 @@ pathview(gene.data = logFC,
 
 ```
 
-```{r}
+```{r KEGG}
 eWP_KEGG <- enrichKEGG(gene = upDEGs$entrezgene_id,
                     organism = 'human',
                     pvalueCutoff = 0.05,
@@ -387,7 +392,7 @@ head(eWP_KEGG, n=20)
 
 ## Enrichment score transcription factors
 
-```{r}
+```{r retrieve promoter regions}
 promoter_regions <- getSequence(id=downDEGs$ensembl_gene_id,
                     type="ensembl_gene_id",
                     seqType="gene_flank",
