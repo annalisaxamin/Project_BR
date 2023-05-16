@@ -375,6 +375,8 @@ eWP_down <- enrichWP(gene = downDEGs$entrezgene_id,
 head(eWP_down, n=10)
 ```
 Chiedere a Romanel per pathway.id (KEGG o WP)?
+
+## Task 5: Visualization of the enriched pathway
 ```{r pathview up regulated}
 logFC <- upDEGs$logFC
 names(logFC) <- upDEGs$entrezgene_id
@@ -394,10 +396,9 @@ head(eWP_KEGG, n=20)
 ```
 
 
-## Visualization of the enriched pathway
 
 
-## Enrichment score transcription factors
+## Task 6: Enrichment score transcription factors
 
 ```{r retrieve promoter regions}
 promoter_regions <- getSequence(id=downDEGs$ensembl_gene_id,
