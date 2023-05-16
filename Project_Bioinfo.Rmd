@@ -91,22 +91,16 @@ head(colnames(r_anno_df)) # there are only 3 columns: ensembl_gene_id, external_
 ## Task 2: Filter protein coding genes
 To extract only protein coding genes from `raw_counts_df` and `r_anno_df`, we use the `biomaRt` package.
 
-```{r attributes, include = FALSE}
-# get the list of possible attributes
-ensembl <- useMart("ensembl")
-ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
-attributes <- listAttributes(ensembl)
-```
-
 First, we retrieve the information about the protein coding genes from Ensembl.
 ```{r extract protein coding genes}
-ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
+database <- useMart("ensembl")
+datasetHuman <- useDataset("hsapiens_gene_ensembl",mart=database)
 query <- getBM(attributes=c("ensembl_gene_id",
                             "external_gene_name",
                             "gene_biotype"),
                 filters = c("ensembl_gene_id"), 
                 values = r_anno_df$ensembl_gene_id,
-                mart = ensembl)
+                mart = datasetHuman)
 
 query_protein_coding <- query[which(query$gene_biotype == "protein_coding"), ]
 ```
@@ -147,11 +141,38 @@ table(filter_vec)
 Then, we filter the previously updated data frames.
 ```{r create filtered df }
 filter_counts_df <- raw_counts_df_protein_coding[filter_vec>=repl_thr,]
+dim(filter_counts_df) # 17289
 
 filter_anno_df <- r_anno_df_protein_coding[rownames(filter_counts_df),]
+dim(filter_anno_df) # 17289
 ```
 
-To perform the DEG analysis, we first need to create a DGRList object containing information about counts, annotation, samples and genes. To do that, we use the function `DGEList` to create the input for the following normalization step. The normalization intra- and inter-sample is done using the function `calcNormFactors` and specifying `method = "TMM"`, which is the weighted trimmed mean of M-values approach. 
+Now we check the library size of each sample (how many reads we have sequenced for each experiment)
+```{r check library size of each sample, fig.cap="Library size of each sample."}
+size_df <- data.frame("sample"=colnames(filter_counts_df), "read_millions"=colSums(filter_counts_df)/1000000) 
+
+ggplot(data=size_df,aes(sample,read_millions)) +
+  geom_bar(stat="identity",fill="indianred",colour="indianred",width=0.7,alpha=0.7)+
+  coord_flip()+
+  theme_bw()
+```
+Then, we visualize a boxplot of gene counts.
+```{r boxplot gene counts, fig.cap="Boxplot of gene counts before normalization."}
+long_counts_df <- gather(as.data.frame(filter_counts_df), key = "sample", value = "read_number")
+
+ggplot(data=long_counts_df,aes(sample,read_number+1)) + 
+  geom_boxplot(colour="deeppink4",fill="deeppink4",alpha=0.7) +
+  theme_bw() +
+  scale_y_log10()
+```
+
+As we can see from the plots, there is a significant variability across samples in term of library sizes (reads per million). We have to take into account this aspect because the expected size of each count is the product of the relative abundance of that gene in that sample but also of the library size.
+
+As we can see from the boxplot, we need to normalize our data before testing for differential expression. Normalization can be obtained using different methodologies. Among them, TMM (the default method) is a method that consider in the normalization also variables related to the library size.
+
+To perform the DEG analysis, we first need to create a DGRList object containing information about counts, annotation, samples and genes. To do that, we use the function `DGEList` to create the input for the following normalization step. This object contains information about counts, samples and genes.
+
+The normalization intra- and inter-sample is done using the function `calcNormFactors` and specifying `method = "TMM"`, which is the weighted trimmed mean of M-values approach. 
 
 ```{r TMM normalization}
 edge_c <- DGEList(counts=filter_counts_df,group=c_anno_df$condition,samples=c_anno_df,genes=filter_anno_df)
@@ -160,12 +181,18 @@ edge_c <- DGEList(counts=filter_counts_df,group=c_anno_df$condition,samples=c_an
 edge_n <- calcNormFactors(edge_c,method="TMM")
 ```
 
+Then, we create a cpm table containing the normalized expression values for each transcript expressed as counts per million (CPM).
 ```{r cpm_table}
 # create a cpm table (normalized expression values)
 cpm_table <- as.data.frame(round(cpm(edge_n),2))
 ```
 
-```{r, include=FALSE}
+```{r inspect cpm_table, include=FALSE}
+head(cpm_table)
+```
+
+To see the effect of the normalization, we look at the boxplot distribution of gene expression signals after normalization.
+```{r boxplot distribution of gene expression signals after normalization, fig.cap="Boxplot distribution of gene expression signals after normalization."}
 # look at the boxplot distribution of gene expression signals after normalization
 long_cpm_df <- gather(cpm_table, key = "sample", value = "CPM")
 
@@ -175,7 +202,9 @@ ggplot(data=long_cpm_df,aes(sample,CPM+1)) +
    scale_y_log10() 
 ```
 
-We define the experimental design matrix, later needed to calculate the dispersion and fit.
+We notice that, with respect to the previous boxplot, after the normalization, the distributions are comparable. That means that now our data is ready to be tested for DE analysis.
+
+We define the experimental design matrix, later needed to calculate the dispersion and fit. This matrix is based on the experimental design, so we define the conditions we want to test (case VS control).
 ```{r}
 design <- model.matrix(~0+group, data=edge_n$samples)
 colnames(design) <- levels(edge_n$samples$group)
@@ -186,20 +215,28 @@ rownames(design) <- edge_n$samples$sample
 design
 ```
 
-
+Once we normalized the data and the design, we proceed by calculating the dispersion fit.
 ```{r dispersion and fit}
 # calculate dispersion and fit with edgeR (necessary for differential expression analysis)
 edge_d <- estimateDisp(edge_n,design)
 edge_f <- glmQLFit(edge_d,design) 
 ```
 
+The `estimateDisp` function tries to estimate the variability at different levels: in the data, inter sample and intra sample. The over dispersion of counts across the samples can be modeled as a Poisson distribution, which can be approximated using a negative binomial distribution by using `glmQLFit` function.
+
+```{r estimated values of the GLM, include=FALSE}
+# glmQLFit returns an object containing the estimated values of the GLM coefficients for each gene:
+head(edge_f$coefficients)
+```
+
+We define the contrasts (conditions to be compared).
 ```{r define contrasts}
 contro <- makeContrasts("control-case", levels=design)
 ```
-`estimateDisp` $$\rightarrow$$ The tool tries to estimate the variability at different levels: in the data, inter sample and intra sample.
+
 
 We performed a test through function `glmQLFTest` to determine which genes are differentially expressed. Then, we selected genes based on a 0.01 p-value cutoff and ordered them based on the log2 fold change.
-```{r DE}
+```{r fit the model with generalized linear models}
 # fit the model with generalized linear models
 edge_t <- glmQLFTest(edge_f,contrast=contro)
 DEGs <- as.data.frame(topTags(edge_t, n=20000, p.value = 0.01, sort.by = "logFC")) 
@@ -211,7 +248,7 @@ Then, we improve the selection, considering not only the p-value, but also the a
 
 - down-regulated genes if $logFC<-1.5$
 
-- unchanged regulated genes otherwise.
+- not significant genes (unchanged) otherwise.
 
 ```{r}
 DEGs$class <- "="
@@ -294,7 +331,7 @@ downDEGs <- DEGs %>% filter(class == "-")
 ### Performing enrichment analysis for GO biological process
 ```{r BP up regulated}
 # biological process up regulated genes
-ego_BP_up <- enrichGO(gene = upDEGs$external_gene_name.y,
+ego_BP_up <- enrichGO(gene = upDEGs$external_gene_name,
                    OrgDb = org.Hs.eg.db,
                    keyType = 'SYMBOL',
                    ont = "BP",
@@ -305,7 +342,7 @@ ego_BP_up <- enrichGO(gene = upDEGs$external_gene_name.y,
 
 ```{r BP down regulated}
 # biological process down regulated genes
-ego_BP_down <- enrichGO(gene = downDEGs$external_gene_name.y,
+ego_BP_down <- enrichGO(gene = downDEGs$external_gene_name,
                    OrgDb = org.Hs.eg.db,
                    keyType = 'SYMBOL',
                    ont = "BP",
@@ -329,7 +366,7 @@ We would expect most of these biological processes to be enriched in the up-regu
 ### Performing enrichment analysis for GO molecular function
 ```{r MP up regulated}
 # molecular function up regulated genes
-ego_MF_up <- enrichGO(gene = upDEGs$external_gene_name.y,
+ego_MF_up <- enrichGO(gene = upDEGs$external_gene_name,
                    OrgDb = org.Hs.eg.db,
                    keyType = 'SYMBOL',
                    ont = "MF",
@@ -340,7 +377,7 @@ ego_MF_up <- enrichGO(gene = upDEGs$external_gene_name.y,
 
 ```{r MP down regulated}
 # molecular function down regulated genes
-ego_MF_down <- enrichGO(gene = downDEGs$external_gene_name.y,
+ego_MF_down <- enrichGO(gene = downDEGs$external_gene_name,
                    OrgDb = org.Hs.eg.db,
                    keyType = 'SYMBOL',
                    ont = "MF",
