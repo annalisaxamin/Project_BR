@@ -54,7 +54,7 @@ library(DOSE)
 library(pathview) # contains cartoons of pathways and we project on them our genes of interest
 ```
 
-## Load data
+## Task 1: Load data
 In particular, we consider data coming from **Lung adenocarcinoma**.
 ```{r Load data}
 load("./RData/Lung_adenocarcinoma.RData")
@@ -88,15 +88,7 @@ head(rownames(r_anno_df), n=5)
 head(colnames(r_anno_df)) # there are only 3 columns: ensembl_gene_id, external_gene_name, length
 ```
 
-```{r}
-# rownames(c_anno_df) <- c_anno_df$sample
-# c_anno_add <- as.data.frame(str_split(string=c_anno_df$sample, pattern="_", simplify = T))
-# colnames(c_anno_add) <- c("condition","replicate")
-# c_anno_df <- cbind(c_anno_df,c_anno_add)
-# c_anno_df
-```
-
-## Filter protein coding genes
+## Task 2: Filter protein coding genes
 To extract only protein coding genes from `raw_counts_df` and `r_anno_df`, we use the `biomaRt` package.
 
 ```{r attributes, include = FALSE}
@@ -105,6 +97,7 @@ ensembl <- useMart("ensembl")
 ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
 attributes <- listAttributes(ensembl)
 ```
+
 First, we retrieve the information about the protein coding genes from Ensembl.
 ```{r extract protein coding genes}
 ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
@@ -116,7 +109,6 @@ query <- getBM(attributes=c("ensembl_gene_id",
                 mart = ensembl)
 
 query_protein_coding <- query[which(query$gene_biotype == "protein_coding"), ]
-
 ```
 
 ```{r inspect query_protein_coding, include=FALSE}
@@ -132,7 +124,7 @@ indexes_raw_counts_df <- which(rownames(raw_counts_df) %in% query_protein_coding
 raw_counts_df_protein_coding <- raw_counts_df[indexes_raw_counts_df, ]
 ```
 
-## Differential expression analysis
+## Task 3: Differential expression analysis
 To perform the differential expression analysis, we will use the `edgeR` package. 
 
 It is important to remove genes with low signal that will have low statistical power. Since, we want to focus on the transcripts we can use to perform the analysis, we can filter raw counts data using a threshold of raw count > 20 in at least 5 replicates.
@@ -151,12 +143,15 @@ filter_vec <- apply(raw_counts_df_protein_coding,1, # go through all count matri
 ```{r see statistics for the filtering, include=FALSE}
 table(filter_vec)
 ```
+
 Then, we filter the previously updated data frames.
 ```{r create filtered df }
 filter_counts_df <- raw_counts_df_protein_coding[filter_vec>=repl_thr,]
 
 filter_anno_df <- r_anno_df_protein_coding[rownames(filter_counts_df),]
 ```
+
+To perform the DEG analysis, we first need to create a DGRList object containing information about counts, annotation, samples and genes. To do that, we use the function `DGEList` to create the input for the following normalization step. The normalization intra- and inter-sample is done using the function `calcNormFactors` and specifying `method = "TMM"`, which is the weighted trimmed mean of M-values approach. 
 
 ```{r TMM normalization}
 edge_c <- DGEList(counts=filter_counts_df,group=c_anno_df$condition,samples=c_anno_df,genes=filter_anno_df)
@@ -171,6 +166,7 @@ cpm_table <- as.data.frame(round(cpm(edge_n),2))
 ```
 
 ```{r, include=FALSE}
+# look at the boxplot distribution of gene expression signals after normalization
 long_cpm_df <- gather(cpm_table, key = "sample", value = "CPM")
 
 ggplot(data=long_cpm_df,aes(sample,CPM+1)) +
@@ -179,6 +175,7 @@ ggplot(data=long_cpm_df,aes(sample,CPM+1)) +
    scale_y_log10() 
 ```
 
+We define the experimental design matrix, later needed to calculate the dispersion and fit.
 ```{r}
 design <- model.matrix(~0+group, data=edge_n$samples)
 colnames(design) <- levels(edge_n$samples$group)
@@ -201,14 +198,22 @@ contro <- makeContrasts("control-case", levels=design)
 ```
 `estimateDisp` $$\rightarrow$$ The tool tries to estimate the variability at different levels: in the data, inter sample and intra sample.
 
+We performed a test through function `glmQLFTest` to determine which genes are differentially expressed. Then, we selected genes based on a 0.01 p-value cutoff and ordered them based on the log2 fold change.
 ```{r DE}
 # fit the model with generalized linear models
 edge_t <- glmQLFTest(edge_f,contrast=contro)
-DEGs <- as.data.frame(topTags(edge_t, n=20,p.value = 0.01,sort.by = "logFC")) # returns object with best 20 top genes
-DEGs <- as.data.frame(topTags(edge_t,n=20000)) # select all the 20000 genes
+DEGs <- as.data.frame(topTags(edge_t, n=20000, p.value = 0.01, sort.by = "logFC")) 
+```
 
-# We can improve the selection, considering not only the p-value, but also
-# the average expression of the genes (logCPM).
+Then, we improve the selection, considering not only the p-value, but also the average expression of the genes (logCPM). We used the logFC value to assign genes to different classes:
+
+- up-regulated genes if $logFC>1.5$
+
+- down-regulated genes if $logFC<-1.5$
+
+- unchanged regulated genes otherwise.
+
+```{r}
 DEGs$class <- "="
 DEGs$class[which(DEGs$logCPM>1&DEGs$logFC>1.5&DEGs$FDR<0.25)] = "+" # upregulated genes
 DEGs$class[which(DEGs$logCPM>1&DEGs$logFC<(-1.5)&DEGs$FDR<0.25)] = "-" # downregulated genes
@@ -217,10 +222,13 @@ DEGs <- DEGs[order(DEGs$logFC,decreasing = T),]
 
 ```{r check how many up and down regulated}
 head(DEGs)
-table(DEGs$class) # 1202-, 885+, 15202= 
+table(DEGs$class) # 1193-, 877+, 14949= 
 ```
 
-```{r volcano plot}
+From the results, we saw that 1193 genes are down-regulated, 877 genes are up-regulated and 14949 genes have no changes in their regulation.
+
+We then create the volcano plot.
+```{r volcano plot, fig.cap="Volcano plot"}
 input_df <- DEGs
 xlabel <- "log2 FC case vs control"
 ylabel <- "-log10 p-value"
@@ -230,8 +238,8 @@ plot(input_df$logFC, -log(input_df$PValue,base=10),xlab=xlabel, ylab=ylabel,
      col=ifelse(input_df$class=="=","grey70","olivedrab4"), pch=20, frame.plot=TRUE, cex=0.8, main="Volcano plot")
 abline(v=0,lty=2,col="grey20")
 ```
-
-```{r heatmap}
+We also report the heatmap of only up and down-regulated genes.
+```{r heatmap, fig.cap="Heatmap up and down-regulated genes."}
 # only up and down regulated genes
 cols <- c(ifelse(c_anno_df$condition == "case", "chartreuse4","burlywood3"))
 pal <- c("blue","white","red") 
@@ -240,6 +248,7 @@ heatmap(as.matrix(cpm_table[which(rownames(cpm_table)%in%DEGs$ensembl_gene_id[wh
         ColSideColors = cols,cexCol = 0.5,margins = c(4,4),col=pal,cexRow = 0.2)
 ```
 
+To simplify the later analysis, we save the list of differentially expressed genes in a text file.
 ```{r save up and down regulated in text file}
 up_DEGs <- DEGs[which(DEGs$class=="+"),]
 down_DEGs <- DEGs[which(DEGs$class=="-"),]
@@ -250,7 +259,7 @@ write.table(DEGs,file="DEGs.txt",row.names=F,col.names=T,sep="\t",quote=F)
 ```
 
 
-## Gene set enrichment analysis
+## Task 4: Gene set enrichment analysis
 To perform the gene set enrichment analysis, we will use the `clusterProfiler` package.
 
 ```{r import the previously saved DEGs}
@@ -258,10 +267,11 @@ DEGs <- read.table("DEGs.txt",header=T,sep="\t",as.is=T)
 table(DEGs$class)
 ```
 
+We use the `biomaRt` package to retrieve the `entrezgene_id` for all the genes in the `DEGs` dataset.
 
 ```{r}
 ensembl <- useEnsembl(biomart = "ensembl",dataset = "hsapiens_gene_ensembl")
-convert <- getBM(attributes=c("ensembl_gene_id","entrezgene_id","external_gene_name"),
+convert <- getBM(attributes=c("ensembl_gene_id","entrezgene_id"),
                  filters=c("ensembl_gene_id"), 
                  values=DEGs$ensembl_gene_id,
                  mart = ensembl)
@@ -271,16 +281,9 @@ DEGs <- DEGs[which(!is.na(DEGs$entrezgene_id)),]
 DEGs <- DEGs[-which(duplicated(DEGs$entrezgene_id)),]
 ```
 
+We removed all the NA and duplicates in the dataset DEGs.
 
-```{r rank, include= FALSE}
-ranks <- DEGs$logFC
-ranks <- sort(ranks, decreasing = T) # sort manually to have the order needed for the package
-names(ranks) <- DEGs$entrezgene_id
-head(ranks)
-barplot(sort(ranks, decreasing = T),las=3)
-```
-
-
+We created new lists for the down and up-regulated genes.
 ```{r}
 # list of up-regulated genes
 upDEGs <- DEGs %>% filter(class == "+")
@@ -288,9 +291,10 @@ upDEGs <- DEGs %>% filter(class == "+")
 downDEGs <- DEGs %>% filter(class == "-")
 ```
 
+### Performing enrichment analysis for GO biological process
 ```{r BP up regulated}
-# biological process up
-ego_BP <- enrichGO(gene = upDEGs$external_gene_name.y,
+# biological process up regulated genes
+ego_BP_up <- enrichGO(gene = upDEGs$external_gene_name.y,
                    OrgDb = org.Hs.eg.db,
                    keyType = 'SYMBOL',
                    ont = "BP",
@@ -300,8 +304,8 @@ ego_BP <- enrichGO(gene = upDEGs$external_gene_name.y,
 ```
 
 ```{r BP down regulated}
-# biological process down
-ego_BP_d <- enrichGO(gene = downDEGs$external_gene_name.y,
+# biological process down regulated genes
+ego_BP_down <- enrichGO(gene = downDEGs$external_gene_name.y,
                    OrgDb = org.Hs.eg.db,
                    keyType = 'SYMBOL',
                    ont = "BP",
@@ -310,19 +314,22 @@ ego_BP_d <- enrichGO(gene = downDEGs$external_gene_name.y,
                    qvalueCutoff = 0.05)
 ```
 
-
-```{r barplot BP up}
-barplot(ego_BP,showCategory=10)
+```{r barplot BP up, fig.cap="Biological process up regulated genes"}
+barplot(ego_BP_up,showCategory=10)
 ```
 
-```{r barplot BP down}
-barplot(ego_BP_d,showCategory=10)
+Both the first two biological processes are related to the microtubules, which might be explained by the fact that tumour cells have a high growth rate thus the cytoskeleton is assembled over and over again. We also notice that angiogenesis is among the most enriched biological processes as we expected. In fact, angiogenesis is particularly important in tumorigenesis to allow the growth of the tumour tissue, providing nutrients to cells.
+
+```{r barplot BP down, fig.cap="Biological process down regulated genes"}
+barplot(ego_BP_down,showCategory=10)
 ```
 
+We would expect most of these biological processes to be enriched in the up-regulated genes since tumour cells tend to replicate more than normal cells. A possible explaination is that tumour cells genes accumulate numerous mutations usually ending up in loss of function or downregulation. These mutations might occur on transcription factors binding sites or RNA binding sites, reducing their expression.
 
+### Performing enrichment analysis for GO molecular function
 ```{r MP up regulated}
-# molecular function up
-ego_MF <- enrichGO(gene = upDEGs$external_gene_name.y,
+# molecular function up regulated genes
+ego_MF_up <- enrichGO(gene = upDEGs$external_gene_name.y,
                    OrgDb = org.Hs.eg.db,
                    keyType = 'SYMBOL',
                    ont = "MF",
@@ -332,8 +339,8 @@ ego_MF <- enrichGO(gene = upDEGs$external_gene_name.y,
 ```
 
 ```{r MP down regulated}
-# molecular function down
-ego_MF_d <- enrichGO(gene = downDEGs$external_gene_name.y,
+# molecular function down regulated genes
+ego_MF_down <- enrichGO(gene = downDEGs$external_gene_name.y,
                    OrgDb = org.Hs.eg.db,
                    keyType = 'SYMBOL',
                    ont = "MF",
@@ -342,30 +349,30 @@ ego_MF_d <- enrichGO(gene = downDEGs$external_gene_name.y,
                    qvalueCutoff = 0.05)
 ```
 
-```{r visualize MF up}
-barplot(ego_MF,showCategory=10)
+```{r visualize MF up, fig.cap="Molecular function up regulated genes"}
+barplot(ego_MF_up,showCategory=10)
 ```
 
-```{r visualize MF down}
-barplot(ego_MF_d,showCategory=10)
+```{r visualize MF down, fig.cap="Molecular function down regulated genes"}
+barplot(ego_MF_down,showCategory=10)
 ```
 
 ```{r WP up regulated}
-eWP <- enrichWP(gene = upDEGs$entrezgene_id,
+eWP_up <- enrichWP(gene = upDEGs$entrezgene_id,
                     organism = 'Homo sapiens',
                     pvalueCutoff = 0.05,
                     qvalueCutoff = 0.1)
 
-head(eWP, n=10)
+head(eWP_up, n=10)
 ```
 
 ```{r WP down regulated}
-eWP_d <- enrichWP(gene = downDEGs$entrezgene_id,
+eWP_down <- enrichWP(gene = downDEGs$entrezgene_id,
                     organism = 'Homo sapiens',
                     pvalueCutoff = 0.05,
                     qvalueCutoff = 0.1)
 
-head(eWP_d, n=10)
+head(eWP_down, n=10)
 ```
 Chiedere a Romanel per pathway.id (KEGG o WP)?
 ```{r pathview up regulated}
@@ -408,4 +415,51 @@ seq <- lapply(promoter_regions$gene_flank, function(x) DNAString(x))
 ```{r enriched TFs}
 enriched_TFs = motifEnrichment(seq,PWMLogn.hg19.MotifDb.Hsap,score = "affinity")
 ```
+```{r visulize output enriched TFs, include=FALSE}
+enriched_TFs
+```
+```{r}
+report = groupReport(enriched_TFs)
+report
+```
 
+## Task 7
+**Select one among the top enriched TFs, compute the empirical distributions of scores for all PWMs that you find in MotifDB for the selected TF and determine for all of them the distribution (log2) threshold cutoff at 99.75%.**
+
+```{r}
+tfs <- report$target[1]
+
+tfs_motifs = subset(MotifDb, organism == "Hsapiens" & geneSymbol == tfs)
+# tfs_motifs
+
+PWM = toPWM(as.list(tfs_motifs))
+PWM
+
+ecdf = motifEcdf(PWM, organism = "hg19", quick = TRUE) # calculate for each motif of my gene the empirical distribution scores
+# ecdf
+
+thresholds = lapply(ecdf, function(x) log2(quantile(x, 0.9975))) # for each of the distribution, take the quantile as reference
+# thresholds
+```
+
+## Task 8
+**Identify which up-regulated (or down-regulated depending on the choice you made at point 7) genes have a region in their promoter (defined as previously) with binding scores above the computed thresholds for any of the previously selected PWMs. Use pattern matching as done during the course**
+
+```{r}
+scores = motifScores(seq, PWM, raw.scores = FALSE, cutoff = unlist(thresholds)) # in my promoters, i want to spot the regions that have higher probability to bind my transcription factors -> the function motifScores performs the pattern matching
+
+head(scores)
+
+
+fractions_99_75 = c()
+fractions_99_75 = c(fractions_99_75, length(which(apply(scores, 1, sum)>0))/100)
+fractions_99_75
+```
+
+
+## Task 9
+**Use STRING database to find PPI interactions among differentially expressed genes and export the network in TSV format.**
+
+
+## Task 10
+**Import the network in R and using igraph package and identify and plot the largest connected component.**
