@@ -492,6 +492,10 @@ head(scores)
 fractions_99_75 = c()
 fractions_99_75 = c(fractions_99_75, length(which(apply(scores, 1, sum)>0))/100)
 fractions_99_75
+
+highscore_seq <- which(apply(scores, 1, sum)>0)
+down_DEGs[highscore_seq,] # keeping only sequences which have higher score than threshold 
+
 ```
 
 
