@@ -205,7 +205,7 @@ ggplot(data=long_cpm_df,aes(sample,CPM+1)) +
 We notice that, with respect to the previous boxplot, after the normalization, the distributions are comparable. That means that now our data is ready to be tested for DE analysis.
 
 We define the experimental design matrix, later needed to calculate the dispersion and fit. This matrix is based on the experimental design, so we define the conditions we want to test (case VS control).
-```{r}
+```{r define experimental design matrix}
 design <- model.matrix(~0+group, data=edge_n$samples)
 colnames(design) <- levels(edge_n$samples$group)
 rownames(design) <- edge_n$samples$sample
@@ -450,7 +450,7 @@ data(PWMLogn.hg19.MotifDb.Hsap)
 seq <- lapply(promoter_regions$gene_flank, function(x) DNAString(x))
 ```
 
-```{r enriched TFs}
+```{r enriched TFs, warning=FALSE}
 enriched_TFs = motifEnrichment(seq,PWMLogn.hg19.MotifDb.Hsap,score = "affinity")
 ```
 ```{r visulize output enriched TFs, include=FALSE}
@@ -464,7 +464,7 @@ report
 ## Task 7
 **Select one among the top enriched TFs, compute the empirical distributions of scores for all PWMs that you find in MotifDB for the selected TF and determine for all of them the distribution (log2) threshold cutoff at 99.75%.**
 
-```{r}
+```{r, warning=FALSE}
 tfs <- report$target[1]
 
 tfs_motifs = subset(MotifDb, organism == "Hsapiens" & geneSymbol == tfs)
