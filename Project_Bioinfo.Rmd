@@ -481,10 +481,12 @@ tfs <- report$target[1]
 tfs_motifs = subset(MotifDb, organism == "Hsapiens" & geneSymbol == tfs)
 # tfs_motifs
 
+# transformation to a PWM matrix
 PWM = toPWM(as.list(tfs_motifs))
-PWM
+# PWM
 
-ecdf = motifEcdf(PWM, organism = "hg19", quick = TRUE) # calculate for each motif of my gene the empirical distribution scores
+ecdf = motifEcdf(PWM, organism = "hg19", quick = TRUE)
+# calculate for each motif of my gene the empirical distribution scores
 # ecdf
 
 thresholds = lapply(ecdf, function(x) log2(quantile(x, 0.9975))) # for each of the distribution, take the quantile as reference
@@ -497,15 +499,9 @@ thresholds = lapply(ecdf, function(x) log2(quantile(x, 0.9975))) # for each of t
 ```{r}
 scores = motifScores(seq, PWM, raw.scores = FALSE, cutoff = unlist(thresholds)) # in my promoters, i want to spot the regions that have higher probability to bind my transcription factors -> the function motifScores performs the pattern matching
 
-head(scores)
-
-
-fractions_99_75 = c()
-fractions_99_75 = c(fractions_99_75, length(which(apply(scores, 1, sum)>0))/100)
-fractions_99_75
-
-highscore_seq <- which(apply(scores, 1, sum)>0)
-down_DEGs[highscore_seq,] # keeping only sequences which have higher score than threshold 
+highscore_seq <- which(apply(scores, 1, function(x){sum(x==0)})==0)
+genes_id <- promoter_regions$ensembl_gene_id[highscore_seq]
+genes_id # down_regulated genes that has a region in their promoter with binding scores above the defined threshold for any PWMs
 
 ```
 
