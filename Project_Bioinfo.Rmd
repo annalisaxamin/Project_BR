@@ -275,15 +275,22 @@ plot(input_df$logFC, -log(input_df$PValue,base=10),xlab=xlabel, ylab=ylabel,
      col=ifelse(input_df$class=="=","grey70","olivedrab4"), pch=20, frame.plot=TRUE, cex=0.8, main="Volcano plot")
 abline(v=0,lty=2,col="grey20")
 ```
-We also report the heatmap of only up and down-regulated genes.
+
+The volcano plot allows to have a quick visual identification of genes with large fold changes that are also statistically significant.
+
+We also report the heatmap of only up and down-regulated genes. 
+
+To create an annotated heatmap focusing only on up- and down-regulated genes we need first of all a matrix in which we select genes with class "+" or "-. Moreover, we also need to assign a color to each sample. In this case, we assign green to the case condition and beige to the control, and save the corresponding color into the variable `cols`. In this way, we can then set the `ColSideColors` parameter in order to have a color code to recognize the sample condition.
 ```{r heatmap, fig.cap="Heatmap up and down-regulated genes."}
-# only up and down regulated genes
+# plot only up and down regulated genes
 cols <- c(ifelse(c_anno_df$condition == "case", "chartreuse4","burlywood3"))
 pal <- c("blue","white","red") 
 pal <- colorRampPalette(pal)(100)
 heatmap(as.matrix(cpm_table[which(rownames(cpm_table)%in%DEGs$ensembl_gene_id[which(DEGs$class!="=")]),]),
         ColSideColors = cols,cexCol = 0.5,margins = c(4,4),col=pal,cexRow = 0.2)
 ```
+
+On the top of the heatmap, we can see the dendrogram indicating how distant our samples are, while on the left the dendrogram related to genes. 
 
 To simplify the later analysis, we save the list of differentially expressed genes in a text file.
 ```{r save up and down regulated in text file}
@@ -351,19 +358,23 @@ ego_BP_down <- enrichGO(gene = downDEGs$external_gene_name,
                    qvalueCutoff = 0.05)
 ```
 
+We report the top 10 enriched GO terms related to the Biological Process for both up and down regulated genes.\
+In the barplots we can see that the elements are ordered by adjusted p-value (where the most significant is placed on the top) and on the x-axis we have the gene counts, so the number of elements of our lists were found in the category.
+
 ```{r barplot BP up, fig.cap="Biological process up regulated genes"}
-barplot(ego_BP_up,showCategory=10)
+barplot(ego_BP_up,showCategory=10, main = "Up-regulated gene list: top 10 enriched BP terms")
 ```
 
 Both the first two biological processes are related to the microtubules, which might be explained by the fact that tumour cells have a high growth rate thus the cytoskeleton is assembled over and over again. We also notice that angiogenesis is among the most enriched biological processes as we expected. In fact, angiogenesis is particularly important in tumorigenesis to allow the growth of the tumour tissue, providing nutrients to cells.
 
 ```{r barplot BP down, fig.cap="Biological process down regulated genes"}
-barplot(ego_BP_down,showCategory=10)
+barplot(ego_BP_down,showCategory=10, main= "Down-regulated gene list: top 10 enriched BP terms")
 ```
 
 We would expect most of these biological processes to be enriched in the up-regulated genes since tumour cells tend to replicate more than normal cells. A possible explaination is that tumour cells genes accumulate numerous mutations usually ending up in loss of function or downregulation. These mutations might occur on transcription factors binding sites or RNA binding sites, reducing their expression.
 
 ### Performing enrichment analysis for GO molecular function
+The same analysis was done also for the molecular function.
 ```{r MP up regulated}
 # molecular function up regulated genes
 ego_MF_up <- enrichGO(gene = upDEGs$external_gene_name,
