@@ -17,7 +17,7 @@ knitr::opts_chunk$set(warning=FALSE,
                       )
 
 # Set working directory
-setwd("~/Documents/Repo_Git/Project_BR")
+#setwd("~/Documents/Repo_Git/Project_BR")
 ```
 
 
@@ -52,6 +52,7 @@ library(enrichplot) # build enrich map
 library(ggnewscale)
 library(DOSE)
 library(pathview) # contains cartoons of pathways and we project on them our genes of interest
+library(igraph)
 ```
 
 ## Task 1: Load data
@@ -535,9 +536,34 @@ write(genes_id, 'output/enriched_genes_id.txt')
 ## Task 9
 **Use STRING database to find PPI interactions among differentially expressed genes and export the network in TSV format.**
 ```{r}
+dat <- read.table("down_DEGs.txt", sep = "\t", header = TRUE)
 
+write.table(dat$ensembl_gene_id, file = "ens_gene_id_down.txt", row.names = FALSE, col.names = FALSE)
 ```
 
 
 ## Task 10
 **Import the network in R and using igraph package and identify and plot the largest connected component.**
+
+```{r}
+links <- read.delim("string_interactions_short.tsv")
+downDEGs <- read.table("down_DEGs.txt", sep = "\t", header = TRUE)
+
+ensembl <- useMart(biomart="ensembl",dataset="hsapiens_gene_ensembl")
+nodes <- 
+   getBM(attributes=c("external_gene_name","ensembl_gene_id","description","gene_biotype","start_position","end_position","chromosome_name","strand"),
+         filters=c("ensembl_gene_id"), 
+         values=downDEGs[,1],
+         mart = ensembl) # search info about nodes using ensembl_gene_id
+nodes <- unique(nodes[,c(1,3:6)])
+
+nodes <- nodes[nodes$external_gene_name %in% links$X.node1 & nodes$external_gene_name %in% links$X.node1,]
+
+links <- links[links$X.node1 %in% nodes$external_gene_name & links$node2 %in% nodes$external_gene_name,]
+
+# create network
+net <- graph_from_data_frame(d=links,vertices=nodes,directed=FALSE)
+
+#plot(net)
+```
+
