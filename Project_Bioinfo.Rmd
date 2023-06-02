@@ -2,10 +2,10 @@
 title: "Project Bioinformatic Resources"
 author: "Annalisa Xamin, Nicola Perotti"
 output:
-  html_document:
-    df_print: paged
   pdf_document:
     latex_engine: xelatex
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -474,7 +474,6 @@ head(eWP_KEGG, n=20)
 
 
 ## Task 6: Enrichment score transcription factors
-
 ```{r retrieve promoter regions}
 promoter_regions <- getSequence(id=downDEGs$ensembl_gene_id,
                     type="ensembl_gene_id",
@@ -528,27 +527,26 @@ scores = motifScores(seq, PWM, raw.scores = FALSE, cutoff = unlist(thresholds)) 
 
 highscore_seq <- which(apply(scores, 1, sum)>0)
 genes_id <- promoter_regions$ensembl_gene_id[highscore_seq]
-genes_id # down_regulated genes that has a region in their promoter with binding scores above the defined threshold for any PWMs
+# genes_id # down-regulated genes that have a region in their promoter with binding scores above the defined threshold for any PWMs
 write(genes_id, 'output/enriched_genes_id.txt')
 ```
 
 
 ## Task 9
-**Use STRING database to find PPI interactions among differentially expressed genes and export the network in TSV format.**
+We use STRING database to ind PPI interactions among differentially expressed genes. The network is exported in TSV format.
 ```{r}
-dat <- read.table("down_DEGs.txt", sep = "\t", header = TRUE)
+dat <- read.table("output/down_DEGs.txt", sep = "\t", header = TRUE)
 
-write.table(dat$ensembl_gene_id, file = "ens_gene_id_down.txt", row.names = FALSE, col.names = FALSE)
+write.table(dat$ensembl_gene_id, file = "output/ens_gene_id_down.txt", row.names = FALSE, col.names = FALSE)
 ```
 
 
 ## Task 10
-**Import the network in R and using igraph package and identify and plot the largest connected component.**
-
+We import the network in R and, using `igraph` package, we identify and plot the largest connected component.
 ```{r}
 links_high_conf <- read.delim("string_interactions_short_high_conf.tsv")
 links <- read.delim("string_interactions_short.tsv")
-downDEGs <- read.table("down_DEGs.txt", sep = "\t", header = TRUE)
+downDEGs <- read.table("output/down_DEGs.txt", sep = "\t", header = TRUE)
 
 ensembl <- useMart(biomart="ensembl",dataset="hsapiens_gene_ensembl")
 nodes <- 
@@ -602,7 +600,7 @@ plot(net.deg,
 
 ```{r string with higher confidence in settings}
 links_high_conf <- read.delim("string_interactions_short_high_conf.tsv")
-downDEGs <- read.table("down_DEGs.txt", sep = "\t", header = TRUE)
+downDEGs <- read.table("output/down_DEGs.txt", sep = "\t", header = TRUE)
 
 ensembl <- useMart(biomart="ensembl",dataset="hsapiens_gene_ensembl")
 nodes <- 
