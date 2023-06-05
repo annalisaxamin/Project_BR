@@ -471,9 +471,9 @@ head(eWP_KEGG, n=20)
 ```
 
 
-
-
 ## Task 6: Enrichment score transcription factors
+
+First of all we retrieve the promoter sequence for all the genes in the list of those down regulated using ensembl gene id as identifier.
 ```{r retrieve promoter regions}
 promoter_regions <- getSequence(id=downDEGs$ensembl_gene_id,
                     type="ensembl_gene_id",
@@ -482,11 +482,13 @@ promoter_regions <- getSequence(id=downDEGs$ensembl_gene_id,
                     mart=ensembl)
 ```
 
+Then we load the background for MotifDb human PWMs and convert the obtained sequence into a DNAString object. 
 ```{r}
 data(PWMLogn.hg19.MotifDb.Hsap)
 seq <- lapply(promoter_regions$gene_flank, function(x) DNAString(x))
 ```
 
+motifEnrichment function performs enrichment analysis on the promoter sequences we obtained a few chunks above.
 ```{r enriched TFs, warning=FALSE}
 enriched_TFs = motifEnrichment(seq,PWMLogn.hg19.MotifDb.Hsap,score = "affinity")
 ```
