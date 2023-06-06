@@ -2,10 +2,10 @@
 title: "Project Bioinformatic Resources"
 author: "Annalisa Xamin, Nicola Perotti"
 output:
-  html_document:
-    df_print: paged
   pdf_document:
     latex_engine: xelatex
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -17,7 +17,7 @@ knitr::opts_chunk$set(warning=FALSE,
                       )
 
 # Set working directory
-#setwd("~/Documents/Repo_Git/Project_BR")
+setwd("~/Documents/Repo_Git/Project_BR")
 ```
 
 
@@ -27,7 +27,6 @@ The following analysis focus on RNA-seq count data extracted from different canc
 # Analysis
 The packages needed for the analysis are the following:
 ```{r load libraries, results='hide'}
-library(sessioninfo)
 library(tidyverse)
 library(biomaRt)
 library(MotifDb) # large collection of motifs across different species
@@ -488,7 +487,7 @@ data(PWMLogn.hg19.MotifDb.Hsap)
 seq <- lapply(promoter_regions$gene_flank, function(x) DNAString(x))
 ```
 
-motifEnrichment function performs enrichment analysis on the promoter sequences we obtained a few chunks above.
+`motifEnrichment` function performs enrichment analysis on the promoter sequences we obtained a few chunks above.
 ```{r enriched TFs, warning=FALSE}
 enriched_TFs = motifEnrichment(seq,PWMLogn.hg19.MotifDb.Hsap,score = "affinity")
 ```
@@ -501,40 +500,36 @@ report
 ```
 
 ## Task 7
-**Select one among the top enriched TFs, compute the empirical distributions of scores for all PWMs that you find in MotifDB for the selected TF and determine for all of them the distribution (log2) threshold cutoff at 99.75%.**
+We select one among the top enriched TFs, compute the empirical distributions of scores for all PWMs that you find in MotifDB for the selected TF and determine for all of them the distribution (log2) threshold cutoff at 99.75%.
 
 ```{r, warning=FALSE}
 tfs <- report$target[1]
-
 tfs_motifs = subset(MotifDb, organism == "Hsapiens" & geneSymbol == tfs)
-# tfs_motifs
 
 # transformation to a PWM matrix
 PWM = toPWM(as.list(tfs_motifs))
-# PWM
 
 ecdf = motifEcdf(PWM, organism = "hg19", quick = TRUE)
 # calculate for each motif of my gene the empirical distribution scores
-# ecdf
 
-thresholds = lapply(ecdf, function(x) log2(quantile(x, 0.9975))) # for each of the distribution, take the quantile as reference
-# thresholds
+thresholds = lapply(ecdf, function(x) log2(quantile(x, 0.9975))) 
+# for each of the distribution, take the quantile as reference
 ```
 
-## Task 8
-**Identify which up-regulated (or down-regulated depending on the choice you made at point 7) genes have a region in their promoter (defined as previously) with binding scores above the computed thresholds for any of the previously selected PWMs. Use pattern matching as done during the course**
+## Task 8: Pattern matching
+We identify which down-regulated genes have a region in their promoter (defined as previously) with binding scores above the computed thresholds for any of the previously selected PWMs.
 
 ```{r}
 scores = motifScores(seq, PWM, raw.scores = FALSE, cutoff = unlist(thresholds)) # in my promoters, i want to spot the regions that have higher probability to bind my transcription factors -> the function motifScores performs the pattern matching
 
 highscore_seq <- which(apply(scores, 1, sum)>0)
 genes_id <- promoter_regions$ensembl_gene_id[highscore_seq]
-# genes_id # down-regulated genes that have a region in their promoter with binding scores above the defined threshold for any PWMs
+# down-regulated genes that have a region in their promoter with binding scores above the defined threshold for any PWMs
 write(genes_id, 'output/enriched_genes_id.txt')
 ```
 
 
-## Task 9
+## Task 9: PPI interactions
 We use STRING database to ind PPI interactions among differentially expressed genes. The network is exported in TSV format.
 ```{r}
 dat <- read.table("output/down_DEGs.txt", sep = "\t", header = TRUE)
@@ -543,7 +538,7 @@ write.table(dat$ensembl_gene_id, file = "output/ens_gene_id_down.txt", row.names
 ```
 
 
-## Task 10
+## Task 10: visualize the network
 We import the network in R and, using `igraph` package, we identify and plot the largest connected component.
 ```{r}
 links_high_conf <- read.delim("string_interactions_short_high_conf.tsv")
