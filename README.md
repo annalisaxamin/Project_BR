@@ -16,3 +16,10 @@ down-regulated genes using a p-value cutoff of 0.01, a log fold change ratio >1.
 8. Identify which down-regulated genes have a region in their promoter with binding scores above the computed thresholds for any of the previously selected PWMs.
 9. Find PPI interactions among differentially expressed genes (STRING)
 10. Identify and plot the largest connected component (igraph)
+
+## Repository structure
+The repository is structured as follows:
+- `RData/`: contains the data used for the analysis
+- `output/`: contains the output obtained from the analysis
+- `Project_Bioinfo.Rmd`: contains the scripts used for the analysis
+- `Project_Bioinfo.pdf`: contains the report
