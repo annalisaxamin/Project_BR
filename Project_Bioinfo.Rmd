@@ -451,6 +451,20 @@ dev.off()
 
 
 ## Task 5: Visualization of the enriched pathway
+KEGG analysis was performed using the function `enrichKEGG`.
+```{r KEGG}
+eWP_KEGG <- enrichKEGG(gene = upDEGs$entrezgene_id,
+                    organism = 'human',
+                    pvalueCutoff = 0.05,
+                    qvalueCutoff = 0.1)
+```
+
+Here are reported the top 20 enriched KEGG pathways resulting from the up-regulated list of genes.
+```{r}
+head(eWP_KEGG, n=20)
+```
+
+The more enriched pathway (using the list of up-regulated genes), with ID **AGGIUNGERE**, was then visualized using the package `pathview`:
 ```{r pathview up regulated}
 logFC <- upDEGs$logFC
 names(logFC) <- upDEGs$entrezgene_id
@@ -459,16 +473,6 @@ pathview(gene.data = logFC,
          species = "human")
 
 ```
-
-```{r KEGG}
-eWP_KEGG <- enrichKEGG(gene = upDEGs$entrezgene_id,
-                    organism = 'human',
-                    pvalueCutoff = 0.05,
-                    qvalueCutoff = 0.1)
-
-head(eWP_KEGG, n=20)
-```
-
 
 ## Task 6: Enrichment score transcription factors
 
