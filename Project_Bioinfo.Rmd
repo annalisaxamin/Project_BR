@@ -475,8 +475,7 @@ pathview(gene.data = logFC,
 ```
 
 ## Task 6: Enrichment score transcription factors
-
-First of all we retrieve the promoter sequence for all the genes in the list of those down regulated using ensembl gene id as identifier.
+First of all, we retrieve the promoter sequence for all the genes in the list of those down-regulated using ensembl gene id as identifier.
 ```{r retrieve promoter regions}
 promoter_regions <- getSequence(id=downDEGs$ensembl_gene_id,
                     type="ensembl_gene_id",
