@@ -17,7 +17,7 @@ knitr::opts_chunk$set(warning=FALSE,
                       )
 
 # Set working directory
-setwd("~/Documents/Repo_Git/Project_BR")
+#setwd("~/Documents/Repo_Git/Project_BR")
 ```
 
 
@@ -290,7 +290,7 @@ heatmap(as.matrix(cpm_table[which(rownames(cpm_table)%in%DEGs$ensembl_gene_id[wh
         ColSideColors = cols,cexCol = 0.5,margins = c(4,4),col=pal,cexRow = 0.2)
 ```
 
-On the top of the heatmap, we can see the dendrogram indicating how distant our samples are, while on the left the dendrogram related to genes. 
+On the top of the heatmap, we can see the dendrogram indicating how distant our samples are, while on the left the dendrogram related to genes. The dendogram is built by hierarchical clustering, a method based on the concept of dissimilarity. 
 
 To simplify the later analysis, we save the list of differentially expressed genes in a text file.
 ```{r save up and down regulated in text file}
