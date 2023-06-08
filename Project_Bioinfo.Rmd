@@ -2,10 +2,10 @@
 title: "Project Bioinformatic Resources"
 author: "Annalisa Xamin, Nicola Perotti"
 output:
-  html_document:
-    df_print: paged
   pdf_document:
     latex_engine: xelatex
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -459,9 +459,9 @@ eWP_KEGG <- enrichKEGG(gene = upDEGs$entrezgene_id,
                     qvalueCutoff = 0.1)
 ```
 
-Here are reported the top 20 enriched KEGG pathways resulting from the up-regulated list of genes.
+Here are reported the top 10 enriched KEGG pathways resulting from the up-regulated list of genes.
 ```{r}
-head(eWP_KEGG, n=20)
+knitr::kable(head(eWP_KEGG, n=10))
 ```
 
 The more enriched pathway (using the list of up-regulated genes) is related to malaria (and has ID `hsa05144`). We then visualized it using the package `pathview`:
@@ -506,40 +506,68 @@ enriched_TFs
 ```{r}
 report = groupReport(enriched_TFs)
 ```
+```{r inspect report, include=FALSE}
+report
+```
+
 Here we plot the top 5 enriched transcription factors resulted from our analysis:
 ```{r}
 plot(report[1:5])
 ```
 
 ## Task 7
-We select one among the top enriched TFs, compute the empirical distributions of scores for all PWMs that you find in MotifDB for the selected TF and determine for all of them the distribution (log2) threshold cutoff at 99.75%.
+We select one among the top enriched TFs (TFAP4), compute the empirical distributions of scores for all PWMs that you find in MotifDB for the selected TF and determine for all of them the distribution (log2) threshold cutoff at 99.75%.
 
 ```{r, warning=FALSE}
-tfs <- report$target[1]
+tfs <- report$target[2] # contains TFAP4
 tfs_motifs = subset(MotifDb, organism == "Hsapiens" & geneSymbol == tfs)
 
 # transformation to a PWM matrix
 PWM = toPWM(as.list(tfs_motifs))
+```
 
+For the selected TF we found the following PWMs:
+```{r}
+PWM
+```
+
+To get the empirical distribution we used the function `motifEcdf`, which associates to each PWM a distribution. Then, for each score we computed the scores with a cutoff threshold of 99.75%.
+```{r, warning=FALSE}
 ecdf = motifEcdf(PWM, organism = "hg19", quick = TRUE)
-# calculate for each motif of my gene the empirical distribution scores
 
 thresholds = lapply(ecdf, function(x) log2(quantile(x, 0.9975))) 
 # for each of the distribution, take the quantile as reference
+
+scores = motifScores(seq, PWM, raw.scores = FALSE, cutoff = unlist(thresholds))
+```
+
+In the following table are reported the calculated scores for each PWM of the first 10 motifs.
+```{r}
+knitr::kable(head(scores, n=10))
 ```
 
 ## Task 8: Pattern matching
 We identify which down-regulated genes have a region in their promoter (defined as previously) with binding scores above the computed thresholds for any of the previously selected PWMs.
 
+To do that, we using the table of scores displayed before. We selected only genes having a region in their promoter with binding scores above the computed thresholds for any of the previously selected PWMs.
 ```{r}
-scores = motifScores(seq, PWM, raw.scores = FALSE, cutoff = unlist(thresholds)) # in my promoters, i want to spot the regions that have higher probability to bind my transcription factors -> the function motifScores performs the pattern matching
-
-highscore_seq <- which(apply(scores, 1, sum)>0)
+highscore_seq <- which(apply(scores,1,function(x){sum(x==0)})==0)
 genes_id <- promoter_regions$ensembl_gene_id[highscore_seq]
-# down-regulated genes that have a region in their promoter with binding scores above the defined threshold for any PWMs
-write(genes_id, 'output/enriched_genes_id.txt')
 ```
 
+The resulting list contains 510 genes.
+```{r}
+length(genes_id)
+```
+
+```{r}
+head(genes_id, n=5)
+```
+
+
+```{r save output task 8, include=FALSE}
+write(genes_id, 'output/enriched_genes_id.txt')
+```
 
 ## Task 9: PPI interactions
 We use STRING database to ind PPI interactions among differentially expressed genes. The network is exported in TSV format.
