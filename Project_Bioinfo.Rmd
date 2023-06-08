@@ -461,7 +461,7 @@ eWP_KEGG <- enrichKEGG(gene = upDEGs$entrezgene_id,
 
 Here are reported the top 10 enriched KEGG pathways resulting from the up-regulated list of genes.
 ```{r}
-knitr::kable(head(eWP_KEGG, n=10))
+knitr::kable(head(eWP_KEGG[, 1:6], n=10))
 ```
 
 The more enriched pathway (using the list of up-regulated genes) is related to malaria (and has ID `hsa05144`). We then visualized it using the package `pathview`:
@@ -526,8 +526,39 @@ tfs_motifs = subset(MotifDb, organism == "Hsapiens" & geneSymbol == tfs)
 PWM = toPWM(as.list(tfs_motifs))
 ```
 
-For the selected TF we found the following PWMs:
-```{r}
+For the selected TF we found 15 PWMs:
+
+- Hsapiens-cisbp_1.02-M2943_1.02
+
+- Hsapiens-cisbp_1.02-M2944_1.02
+
+- Hsapiens-cisbp_1.02-M2947_1.02
+
+- Hsapiens-cisbp_1.02-M5926_1.02
+
+- Hsapiens-cisbp_1.02-M5927_1.02
+
+- Hsapiens-cisbp_1.02-M6513_1.02
+
+- Hsapiens-HOCOMOCOv10-TFAP4_HUMAN.H10MO.C
+
+- Hsapiens-HOCOMOCOv11-core-A-TFAP4_HUMAN.H11MO.0.A
+
+- Hsapiens-jaspar2016-TFAP4-MA0691.1
+
+- Hsapiens-jaspar2018-TFAP4-MA0691.1
+
+- Hsapiens-jaspar2022-TFAP4-MA0691.1
+
+- Hsapiens-jaspar2022-TFAP4-MA1570.1
+
+- Hsapiens-jolma2013-TFAP4
+
+- Hsapiens-jolma2013-TFAP4-2
+
+- Hsapiens-SwissRegulon-TFAP4.SwissRegulon
+
+```{r visualize PWM, include=FALSE}
 PWM
 ```
 
@@ -543,7 +574,7 @@ scores = motifScores(seq, PWM, raw.scores = FALSE, cutoff = unlist(thresholds))
 
 In the following table are reported the calculated scores for each PWM of the first 10 motifs.
 ```{r}
-knitr::kable(head(scores, n=10))
+head(scores, n=10)
 ```
 
 ## Task 8: Pattern matching
