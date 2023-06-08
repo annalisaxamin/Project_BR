@@ -511,8 +511,6 @@ Here we plot the top 5 enriched transcription factors resulted from our analysis
 plot(report[1:5])
 ```
 
-
-
 ## Task 7
 We select one among the top enriched TFs, compute the empirical distributions of scores for all PWMs that you find in MotifDB for the selected TF and determine for all of them the distribution (log2) threshold cutoff at 99.75%.
 
