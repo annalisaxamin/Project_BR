@@ -17,7 +17,7 @@ knitr::opts_chunk$set(warning=FALSE,
                       )
 
 # Set working directory
-#setwd("~/Documents/Repo_Git/Project_BR")
+setwd("~/Documents/Repo_Git/Project_BR")
 ```
 
 
@@ -398,11 +398,11 @@ ego_MF_down <- enrichGO(gene = downDEGs$external_gene_name,
 ```
 
 ```{r visualize MF up, fig.cap="Molecular function up regulated genes"}
-barplot(ego_MF_up,showCategory=10)
+barplot(ego_MF_up,showCategory=10, main = "Up-regulated gene list: top 10 enriched MP terms")
 ```
 
 ```{r visualize MF down, fig.cap="Molecular function down regulated genes"}
-barplot(ego_MF_down,showCategory=10)
+barplot(ego_MF_down,showCategory=10, main = "Down-regulated gene list: top 10 enriched MP terms")
 ```
 
 ```{r WP up regulated}
@@ -452,7 +452,7 @@ dev.off()
 
 ## Task 5: Visualization of the enriched pathway
 KEGG analysis was performed using the function `enrichKEGG`.
-```{r KEGG}
+```{r KEGG, warning=FALSE}
 eWP_KEGG <- enrichKEGG(gene = upDEGs$entrezgene_id,
                     organism = 'human',
                     pvalueCutoff = 0.05,
@@ -464,15 +464,21 @@ Here are reported the top 20 enriched KEGG pathways resulting from the up-regula
 head(eWP_KEGG, n=20)
 ```
 
-The more enriched pathway (using the list of up-regulated genes), with ID **AGGIUNGERE**, was then visualized using the package `pathview`:
-```{r pathview up regulated}
+The more enriched pathway (using the list of up-regulated genes) is related to malaria (and has ID `hsa05144`). We then visualized it using the package `pathview`:
+```{r pathview up regulated, warning=FALSE}
+# set working directory to save output
+setwd("~/Documents/Repo_Git/Project_BR/output")
+
 logFC <- upDEGs$logFC
 names(logFC) <- upDEGs$entrezgene_id
 pathview(gene.data = logFC, 
-         pathway.id = "WP2446", 
+         pathway.id = "hsa05144", 
          species = "human")
-
 ```
+
+Here is reported the network representing the pathway, with the up-regulated genes colored in red:
+
+![Most enriched pathway](~/Documents/Repo_Git/Project_BR/output/hsa05144.pathview.png)
 
 ## Task 6: Enrichment score transcription factors
 First of all, we retrieve the promoter sequence for all the genes in the list of those down-regulated using ensembl gene id as identifier.
