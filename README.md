@@ -21,5 +21,6 @@ down-regulated genes using a p-value cutoff of 0.01, a log fold change ratio >1.
 The repository is structured as follows:
 - `RData/`: contains the data used for the analysis
 - `output/`: contains the output obtained from the analysis
+- `data_STRING`: contains the data used for the network analysis
 - `Project_Bioinfo.Rmd`: contains the scripts used for the analysis
 - `Project_Bioinfo.pdf`: contains the report

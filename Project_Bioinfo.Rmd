@@ -612,8 +612,8 @@ write.table(dat$ensembl_gene_id, file = "output/ens_gene_id_down.txt", row.names
 ## Task 10: visualize the network
 We import the network in R and, using `igraph` package, we identify and plot the largest connected component.
 ```{r}
-links_high_conf <- read.delim("string_interactions_short_high_conf.tsv")
-links <- read.delim("string_interactions_short.tsv")
+links_high_conf <- read.delim("data_STRING/string_interactions_short_high_conf.tsv")
+links <- read.delim("data_STRING/string_interactions_short.tsv")
 downDEGs <- read.table("output/down_DEGs.txt", sep = "\t", header = TRUE)
 
 ensembl <- useMart(biomart="ensembl",dataset="hsapiens_gene_ensembl")
@@ -667,7 +667,7 @@ plot(net.deg,
 ```
 
 ```{r string with higher confidence in settings}
-links_high_conf <- read.delim("string_interactions_short_high_conf.tsv")
+links_high_conf <- read.delim("data_STRING/string_interactions_short_high_conf.tsv")
 downDEGs <- read.table("output/down_DEGs.txt", sep = "\t", header = TRUE)
 
 ensembl <- useMart(biomart="ensembl",dataset="hsapiens_gene_ensembl")
