@@ -582,17 +582,27 @@ We identify which down-regulated genes have a region in their promoter (defined 
 
 To do that, we using the table of scores displayed before. We selected only genes having a region in their promoter with binding scores above the computed thresholds for any of the previously selected PWMs.
 ```{r}
-highscore_seq <- which(apply(scores,1,function(x){sum(x==0)})==0)
-genes_id <- promoter_regions$ensembl_gene_id[highscore_seq]
+fractions_99.75 <- c()
+fractions_99.75 <- c(fractions_99.75, length(which(apply(scores, 1, sum)>0))/length(scores))
+fractions_99.75
+
+highscore_seq <- which(apply(scores,1,sum)>0)
+genes_id <- downDEGs[highscore_seq,]
 ```
 
-The resulting list contains 510 genes.
+```{r, include=FALSE}
+#highscore_seq <- which(apply(scores, 1, function(x) { sum(x == 0)}) == 0)
+#genes_id <- downDEGs[highscore_seq,]
+#length(genes_id)
+```
+
+The resulting list contains 10 genes.
 ```{r}
 length(genes_id)
 ```
 
 ```{r}
-head(genes_id, n=5)
+genes_id
 ```
 
 
