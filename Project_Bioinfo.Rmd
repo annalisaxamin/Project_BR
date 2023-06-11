@@ -2,10 +2,10 @@
 title: "Project Bioinformatic Resources"
 author: "Annalisa Xamin, Nicola Perotti"
 output:
-  pdf_document:
-    latex_engine: xelatex
   html_document:
     df_print: paged
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 ```{r setup, include=FALSE}
@@ -129,9 +129,7 @@ count_thr <- 20
 # number of replicates with more counts than the count threshold
 repl_thr <- 5
 
-filter_vec <- apply(raw_counts_df_protein_coding,1, # go through all count matrices by rows
-    function(y) max(by(y, c_anno_df$condition, function(x) sum(x>=count_thr))))
-    # groups the values on each condition and sum all the values above the count
+filter_vec <- apply(raw_counts_df_protein_coding,1, function(y) max(by(y, c_anno_df$condition, function(x) sum(x>=count_thr)))) # groups the values on each condition and sum all the values above the count
 ```
 
 ```{r see statistics for the filtering, include=FALSE}
@@ -476,6 +474,11 @@ pathview(gene.data = logFC,
          species = "human")
 ```
 
+```{r change working directory, include=FALSE}
+setwd("~/Documents/Repo_Git/Project_BR")
+```
+
+
 Here is reported the network representing the pathway, with the up-regulated genes colored in red:
 
 ![Most enriched pathway](~/Documents/Repo_Git/Project_BR/output/hsa05144.pathview.png)
@@ -601,13 +604,13 @@ The resulting list contains 10 genes.
 length(genes_id)
 ```
 
-```{r}
+```{r, include=FALSE}
 genes_id
 ```
 
 
 ```{r save output task 8, include=FALSE}
-write(genes_id, 'output/enriched_genes_id.txt')
+write(genes_id$ensembl_gene_id, 'output/enriched_genes_id.txt')
 ```
 
 ## Task 9: PPI interactions
