@@ -1,6 +1,10 @@
 # Project Bioinformatic Resources
 This repository contains the project done for the course of Bioinformatic Resources (held by Prof. Romanel, a.y. 2022-2023) @ University of Trento. 
 
+Project developed by:
+- Annalisa Xamin @annalisaxamin
+- Nicola Perotti @nicolaperotti
+
 ## Project description
 The project consists in the analysis of RNA-seq count data of Lung Adenocarcinoma extracted from the Cancer Genome Atlas (TCGA). From the original TCGA data 50 cases (tumor samples) and 50 controls (normal samples) were randomly selected.
 
@@ -21,8 +25,8 @@ The repository is structured as follows:
 - `RData/`: contains the data used for the analysis
 - `output/`: contains the output obtained from the analysis
 - `data_STRING/`: contains the data used for the network analysis
-- `Project_Bioinfo.Rmd`: contains the scripts used for the analysis
-- `Project_Bioinfo.pdf`: contains the report
+- `Project_Bioinfo.Rmd`: contains the **script** used for the analysis
+- `Project_Bioinfo.pdf`: contains the **report**
 
 ## Output
 The output of the analysis is available in the `output/` folder. It consists of:
