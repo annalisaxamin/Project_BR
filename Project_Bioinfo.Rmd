@@ -25,11 +25,10 @@ setwd("~/Documents/Repo_Git/Project_BR")
 The following analysis focus on RNA-seq count data extracted from different cancer datasets from the Cancer Genome Atlas (TCGA). From the original TCGA data 50 cases (tumor samples) and 50 controls (normal samples) were randomly selected.
 
 # Analysis
-The packages needed for the analysis are the following:
-```{r load libraries, results='hide'}
+```{r load libraries, results='hide', include=FALSE}
 library(tidyverse)
 library(biomaRt)
-library(MotifDb) # large collection of motifs across different species
+library(MotifDb)
 library(seqLogo) 
 library(PWMEnrich)
 library(PWMEnrich.Hsapiens.background)
@@ -41,16 +40,16 @@ library(genefilter)
 library(limma)
 library(pheatmap)
 library(stringr)
-library(GenomicFeatures) # to build object with specific information such as genomic coordinates
+library(GenomicFeatures) 
 library(ggplot2)
-library(edgeR) # designed to perform Differential Expression Analysis from RNA-Seq data
-library(fgsea) # computation of enrichment scores and other statistics
-library(org.Hs.eg.db) # database annotation human specific transcript from Ensembl
-library(clusterProfiler) # uses Fisher test, explore gene list of interest against a reference
-library(enrichplot) # build enrich map
+library(edgeR)
+library(fgsea) 
+library(org.Hs.eg.db)
+library(clusterProfiler) 
+library(enrichplot)
 library(ggnewscale)
 library(DOSE)
-library(pathview) # contains cartoons of pathways and we project on them our genes of interest
+library(pathview) 
 library(igraph)
 ```
 
