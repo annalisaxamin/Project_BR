@@ -619,7 +619,7 @@ write.table(dat$ensembl_gene_id, file = "output/ens_gene_id_down.txt", row.names
 We generate a `.txt` file with the gene of interest to retrieve from STRING the network. Then, the network is exported in `.tsv` format.
 
 ## Task 10: visualize the network
-We import the network in R and, using `igraph` package, we identify and plot the largest connected component.
+We import the network in R and, using `igraph` package, we identify and plot the largest connected component. A connected component of a graph is a subgraph in which all nodes are connected with each other via a path. So, it exists a path (series of edges belonging to set of edges E) that connects any two nodes belonging to the subgraph. Identifying connected components is usually useful in biology to underline some patterns or groups of genes which are extremely connected and which tend to influence each other.
 ```{r}
 links_high_conf <- read.delim("data_STRING/string_interactions_short_high_conf.tsv")
 links <- read.delim("data_STRING/string_interactions_short.tsv")
@@ -642,7 +642,9 @@ net <- graph_from_data_frame(d=links,vertices=nodes,directed=FALSE)
 
 plot(net)
 
+# identifying components
 c <- components(net, mode = c("weak","strong"))
+# taking only the biggest component
 net.c <- induced_subgraph(net,V(net)[which(c$membership==1)])
 
 plot(net.c, 
@@ -653,7 +655,7 @@ plot(net.c,
      vertex.label.color="black", 
      vertex.label.cex=0.7,
      edge.curved=0.1)
-
+# this first plot looks very confusing, there are a lot of connections. Let's try to take only nodes with at least a certain degree value.
 
 deg <- degree(net.c,mode="all")
 names_nodes <- names(deg[which(deg>150)])
@@ -675,6 +677,7 @@ plot(net.deg,
      edge.curved=0.1)
 ```
 
+Let's try now to set a higher confidence on STRING since we have just seen that the first graph is quite dense of nodes and edges. 
 ```{r string with higher confidence in settings}
 links_high_conf <- read.delim("data_STRING/string_interactions_short_high_conf.tsv")
 downDEGs <- read.table("output/down_DEGs.txt", sep = "\t", header = TRUE)
@@ -696,7 +699,9 @@ net <- graph_from_data_frame(d=links_high_conf,vertices=nodes,directed=FALSE)
 
 plot(net)
 
+# identifying components
 c <- components(net, mode = "strong")
+# taking only the biggest component
 net.c <- induced_subgraph(net,V(net)[which(c$membership==1)])
 
 plot(net.c, 
@@ -708,7 +713,7 @@ plot(net.c,
      vertex.label.cex=0.7,
      edge.curved=0.1)
 
-
+# Let's try again to keep only nodes with at least a certain degree value
 deg <- degree(net.c,mode="all")
 names_nodes <- names(deg[which(deg>110)])
 
