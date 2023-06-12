@@ -592,7 +592,6 @@ highscore_seq <- which(apply(scores,1,sum)>0)
 genes_id <- downDEGs[highscore_seq,]
 ```
 
-
 The resulting list contains 1179 genes.
 ```{r}
 dim(genes_id)
@@ -601,7 +600,6 @@ dim(genes_id)
 ```{r, include=FALSE}
 genes_id
 ```
-
 
 ```{r save output task 8, include=FALSE}
 write(genes_id$ensembl_gene_id, 'output/enriched_genes_id.txt')
