@@ -2,10 +2,10 @@
 title: "Project Bioinformatic Resources"
 author: "Annalisa Xamin, Nicola Perotti"
 output:
-  html_document:
-    df_print: paged
   pdf_document:
     latex_engine: xelatex
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -599,9 +599,9 @@ genes_id <- downDEGs[highscore_seq,]
 #length(genes_id)
 ```
 
-The resulting list contains 10 genes.
+The resulting list contains 1179 genes.
 ```{r}
-length(genes_id)
+dim(genes_id)
 ```
 
 ```{r, include=FALSE}
