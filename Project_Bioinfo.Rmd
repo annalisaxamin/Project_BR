@@ -593,11 +593,6 @@ highscore_seq <- which(apply(scores,1,sum)>0)
 genes_id <- downDEGs[highscore_seq,]
 ```
 
-```{r, include=FALSE}
-#highscore_seq <- which(apply(scores, 1, function(x) { sum(x == 0)}) == 0)
-#genes_id <- downDEGs[highscore_seq,]
-#length(genes_id)
-```
 
 The resulting list contains 1179 genes.
 ```{r}
@@ -614,13 +609,14 @@ write(genes_id$ensembl_gene_id, 'output/enriched_genes_id.txt')
 ```
 
 ## Task 9: PPI interactions
-We use STRING database to ind PPI interactions among differentially expressed genes. The network is exported in TSV format.
+We use STRING database to find PPI interactions among differentially expressed genes.
 ```{r}
 dat <- read.table("output/down_DEGs.txt", sep = "\t", header = TRUE)
 
 write.table(dat$ensembl_gene_id, file = "output/ens_gene_id_down.txt", row.names = FALSE, col.names = FALSE)
 ```
 
+We generate a `.txt` file with the gene of interest to retrieve from STRING the network. Then, the network is exported in `.tsv` format.
 
 ## Task 10: visualize the network
 We import the network in R and, using `igraph` package, we identify and plot the largest connected component.
